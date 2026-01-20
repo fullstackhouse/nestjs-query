@@ -178,6 +178,34 @@ describe('TodoItemResolver (auth - e2e)', () => {
           edges.forEach((e) => expect(e.node.todoItemId).toBe('1'))
         }))
 
+    it('should apply auth filter on completedSubTasks relation', () =>
+      request(app.getHttpServer())
+        .post('/graphql')
+        .auth(jwtToken, { type: 'bearer' })
+        .send({
+          operationName: null,
+          variables: {},
+          query: `{
+          todoItem(id: 1) {
+            completedSubTasks {
+              totalCount
+              edges {
+                node {
+                  completed
+                }
+              }
+            }
+          }
+        }`
+        })
+        .expect(200)
+        .then(({ body }) => {
+          const { edges, totalCount }: CursorConnectionType<SubTaskDTO> = body.data.todoItem.completedSubTasks
+          expect(totalCount).toBe(1)
+          expect(edges).toHaveLength(1)
+          expect(edges[0].node.completed).toBe(true)
+        }))
+
     it(`should return subTasksAggregate`, () =>
       request(app.getHttpServer())
         .post('/graphql')

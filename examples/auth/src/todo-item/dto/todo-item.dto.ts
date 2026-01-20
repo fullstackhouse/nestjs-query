@@ -36,6 +36,12 @@ import { UserDTO } from '../../user/user.dto'
 @FilterableCursorConnection('subTasks', () => SubTaskDTO, {
   update: { enabled: true }
 })
+@FilterableCursorConnection('completedSubTasks', () => SubTaskDTO, {
+  relationName: 'subTasks',
+  auth: {
+    authorize: () => ({ completed: { is: true } })
+  }
+})
 @FilterableCursorConnection('tags', () => TagDTO, {
   update: { enabled: true },
   remove: { enabled: true }
