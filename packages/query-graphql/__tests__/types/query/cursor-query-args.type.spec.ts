@@ -139,7 +139,7 @@ describe('Cursor paging strategy QueryArgsType with manual options', (): void =>
     }
     const queryInstance = plainToClass(TestCursorQuery, queryObj)
     const errors = validateSync(queryInstance)
-    expect(errors.length).toBe(1)
+    expect(errors).toHaveLength(1)
     expect(errors[0].property).toBe('paging')
   })
 

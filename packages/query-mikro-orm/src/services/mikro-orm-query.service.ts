@@ -1,4 +1,14 @@
-import { Collection, EntityData, EntityKey, EntityRepository, FilterQuery, QueryOrder, QueryOrderMap, Reference, wrap } from '@mikro-orm/core'
+import {
+  Collection,
+  EntityData,
+  EntityKey,
+  EntityRepository,
+  FilterQuery,
+  QueryOrder,
+  QueryOrderMap,
+  Reference,
+  wrap
+} from '@mikro-orm/core'
 import { OperatorMap } from '@mikro-orm/core/typings'
 import {
   AggregateOptions,
@@ -98,7 +108,7 @@ export class MikroOrmQueryService<DTO extends object, Entity extends object = DT
 
   async createOne(record: DeepPartial<DTO>): Promise<DTO> {
     const em = this.repo.getEntityManager()
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
     const entity = em.create(this.repo.getEntityName(), record as any)
     await em.persistAndFlush(entity)
 
@@ -110,7 +120,7 @@ export class MikroOrmQueryService<DTO extends object, Entity extends object = DT
 
   async createMany(records: DeepPartial<DTO>[]): Promise<DTO[]> {
     const em = this.repo.getEntityManager()
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
     const entities = records.map((r) => em.create(this.repo.getEntityName(), r as any))
     await em.persistAndFlush(entities)
 
@@ -135,7 +145,7 @@ export class MikroOrmQueryService<DTO extends object, Entity extends object = DT
   async updateMany(update: DeepPartial<DTO>, filter: Filter<DTO>): Promise<UpdateManyResponse> {
     const em = this.repo.getEntityManager()
     const where = this.convertFilter(filter)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
     const updatedCount = await em.nativeUpdate(this.repo.getEntityName(), where, update as any)
     return { updatedCount }
   }
@@ -225,10 +235,7 @@ export class MikroOrmQueryService<DTO extends object, Entity extends object = DT
     return this.computeAggregateInMemory(entities, aggregateQuery)
   }
 
-  private computeAggregateInMemory(
-    entities: Entity[],
-    aggregateQuery: AggregateQuery<DTO>
-  ): AggregateResponse<DTO>[] {
+  private computeAggregateInMemory(entities: Entity[], aggregateQuery: AggregateQuery<DTO>): AggregateResponse<DTO>[] {
     if (!aggregateQuery.groupBy || aggregateQuery.groupBy.length === 0) {
       return [this.computeAggregateForGroup(entities, aggregateQuery)]
     }
@@ -265,36 +272,39 @@ export class MikroOrmQueryService<DTO extends object, Entity extends object = DT
     const response: AggregateResponse<DTO> = {}
 
     if (aggregateQuery.count) {
-      response.count = {}
+      const count: Record<string, number> = {}
       for (const { field } of aggregateQuery.count) {
-        ;(response.count as Record<string, number>)[String(field)] = entities.length
+        count[String(field)] = entities.length
       }
+      response.count = count as AggregateResponse<DTO>['count']
     }
 
     if (aggregateQuery.sum) {
-      response.sum = {}
+      const sumAcc: Record<string, number> = {}
       for (const { field } of aggregateQuery.sum) {
         const sum = entities.reduce((acc, e) => {
           const val = (e as Record<string, unknown>)[String(field)]
           return acc + (typeof val === 'number' ? val : 0)
         }, 0)
-        ;(response.sum as Record<string, number>)[String(field)] = sum
+        sumAcc[String(field)] = sum
       }
+      response.sum = sumAcc as AggregateResponse<DTO>['sum']
     }
 
     if (aggregateQuery.avg) {
-      response.avg = {}
+      const avgAcc: Record<string, number> = {}
       for (const { field } of aggregateQuery.avg) {
         const sum = entities.reduce((acc, e) => {
           const val = (e as Record<string, unknown>)[String(field)]
           return acc + (typeof val === 'number' ? val : 0)
         }, 0)
-        ;(response.avg as Record<string, number>)[String(field)] = entities.length > 0 ? sum / entities.length : 0
+        avgAcc[String(field)] = entities.length > 0 ? sum / entities.length : 0
       }
+      response.avg = avgAcc as AggregateResponse<DTO>['avg']
     }
 
     if (aggregateQuery.max) {
-      response.max = {}
+      const maxAcc: Record<string, unknown> = {}
       for (const { field } of aggregateQuery.max) {
         let max: unknown = undefined
         for (const e of entities) {
@@ -303,12 +313,13 @@ export class MikroOrmQueryService<DTO extends object, Entity extends object = DT
             max = val
           }
         }
-        ;(response.max as Record<string, unknown>)[String(field)] = max
+        maxAcc[String(field)] = max
       }
+      response.max = maxAcc as AggregateResponse<DTO>['max']
     }
 
     if (aggregateQuery.min) {
-      response.min = {}
+      const minAcc: Record<string, unknown> = {}
       for (const { field } of aggregateQuery.min) {
         let min: unknown = undefined
         for (const e of entities) {
@@ -317,8 +328,9 @@ export class MikroOrmQueryService<DTO extends object, Entity extends object = DT
             min = val
           }
         }
-        ;(response.min as Record<string, unknown>)[String(field)] = min
+        minAcc[String(field)] = min
       }
+      response.min = minAcc as AggregateResponse<DTO>['min']
     }
 
     return response
