@@ -32,6 +32,12 @@ export interface CustomAuthorizer<DTO> {
     context: any,
     authorizerContext: AuthorizationContext
   ): Promise<Filter<unknown> | undefined>
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  authorizeUpdate?(context: any, authorizerContext: AuthorizationContext): Promise<Filter<DTO>>
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  authorizeDelete?(context: any, authorizerContext: AuthorizationContext): Promise<Filter<DTO>>
 }
 
 export interface Authorizer<DTO> extends CustomAuthorizer<DTO> {

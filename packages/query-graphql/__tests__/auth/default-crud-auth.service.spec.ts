@@ -95,6 +95,30 @@ describe('createDefaultAuthorizer', () => {
     ownerId!: number
   }
 
+  @Injectable()
+  class TestMutationHooksAuthorizer implements CustomAuthorizer<TestMutationHooksDTO> {
+    authorize(context: UserContext): Promise<Filter<TestMutationHooksDTO>> {
+      return Promise.resolve({ ownerId: { eq: context.user.id } })
+    }
+
+    authorizeUpdate(context: UserContext): Promise<Filter<TestMutationHooksDTO>> {
+      return Promise.resolve({ ownerId: { eq: context.user.id }, canUpdate: { is: true } })
+    }
+
+    authorizeDelete(context: UserContext): Promise<Filter<TestMutationHooksDTO>> {
+      return Promise.resolve({ ownerId: { eq: context.user.id }, canDelete: { is: true } })
+    }
+  }
+
+  @Authorize(TestMutationHooksAuthorizer)
+  class TestMutationHooksDTO {
+    ownerId!: number
+
+    canUpdate!: boolean
+
+    canDelete!: boolean
+  }
+
   beforeEach(async () => {
     testingModule = await Test.createTestingModule({
       providers: [
@@ -104,7 +128,8 @@ describe('createDefaultAuthorizer', () => {
           RelationWithAuthorizer,
           TestDTO,
           TestNoAuthDTO,
-          TestWithAuthorizerDTO
+          TestWithAuthorizerDTO,
+          TestMutationHooksDTO
         ])
       ]
     }).compile()
@@ -343,5 +368,72 @@ describe('createDefaultAuthorizer', () => {
         many: true
       }
     )
+  })
+
+  it('should use authorizeUpdate filter on UPDATE operations when defined', async () => {
+    const authorizer = testingModule.get<Authorizer<TestMutationHooksDTO>>(getAuthorizerToken(TestMutationHooksDTO))
+    const filter = await authorizer.authorize(
+      { user: { id: 2 } },
+      {
+        operationName: 'updateOne',
+        operationGroup: OperationGroup.UPDATE,
+        readonly: false,
+        many: false
+      }
+    )
+    expect(filter).toEqual({ ownerId: { eq: 2 }, canUpdate: { is: true } })
+  })
+
+  it('should use authorizeDelete filter on DELETE operations when defined', async () => {
+    const authorizer = testingModule.get<Authorizer<TestMutationHooksDTO>>(getAuthorizerToken(TestMutationHooksDTO))
+    const filter = await authorizer.authorize(
+      { user: { id: 2 } },
+      {
+        operationName: 'deleteOne',
+        operationGroup: OperationGroup.DELETE,
+        readonly: false,
+        many: false
+      }
+    )
+    expect(filter).toEqual({ ownerId: { eq: 2 }, canDelete: { is: true } })
+  })
+
+  it('should fall back to authorize on READ for authorizers with mutation hooks', async () => {
+    const authorizer = testingModule.get<Authorizer<TestMutationHooksDTO>>(getAuthorizerToken(TestMutationHooksDTO))
+    const filter = await authorizer.authorize(
+      { user: { id: 2 } },
+      {
+        operationName: 'queryMany',
+        operationGroup: OperationGroup.READ,
+        readonly: true,
+        many: true
+      }
+    )
+    expect(filter).toEqual({ ownerId: { eq: 2 } })
+  })
+
+  it('should fall back to authorize on UPDATE/DELETE when hooks are not defined (backwards compat)', async () => {
+    const authorizer = testingModule.get<Authorizer<TestDTO>>(getAuthorizerToken(TestDTO))
+    const updateFilter = await authorizer.authorize(
+      { user: { id: 2 } },
+      {
+        operationName: 'updateOne',
+        operationGroup: OperationGroup.UPDATE,
+        readonly: false,
+        many: false
+      }
+    )
+    expect(updateFilter).toEqual({ ownerId: { eq: 2 } })
+
+    const deleteFilter = await authorizer.authorize(
+      { user: { id: 2 } },
+      {
+        operationName: 'deleteOne',
+        operationGroup: OperationGroup.DELETE,
+        readonly: false,
+        many: false
+      }
+    )
+    expect(deleteFilter).toEqual({ ownerId: { eq: 2 } })
   })
 })

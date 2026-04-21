@@ -4,7 +4,7 @@ import { Class, Filter } from '@ptc-org/nestjs-query-core'
 
 import { getAuthorizer, getRelations } from '../decorators'
 import { ResolverRelation } from '../resolvers/relations'
-import { AuthorizationContext, Authorizer, CustomAuthorizer } from './authorizer'
+import { AuthorizationContext, Authorizer, CustomAuthorizer, OperationGroup } from './authorizer'
 import { getAuthorizerToken, getCustomAuthorizerToken } from './tokens'
 
 export interface AuthorizerOptions<DTO> {
@@ -44,6 +44,14 @@ export function createDefaultAuthorizer<DTO>(
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     async authorize(context: any, authorizationContext: AuthorizationContext): Promise<Filter<DTO>> {
+      if (authorizationContext?.operationGroup === OperationGroup.UPDATE && this.customAuthorizer?.authorizeUpdate) {
+        const filter = await this.customAuthorizer.authorizeUpdate(context, authorizationContext)
+        if (filter) return filter
+      }
+      if (authorizationContext?.operationGroup === OperationGroup.DELETE && this.customAuthorizer?.authorizeDelete) {
+        const filter = await this.customAuthorizer.authorizeDelete(context, authorizationContext)
+        if (filter) return filter
+      }
       return (
         this.customAuthorizer?.authorize(context, authorizationContext) ??
         this.authOptions?.authorize(context, authorizationContext) ??
