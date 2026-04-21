@@ -44,4 +44,16 @@ export interface Authorizer<DTO> extends CustomAuthorizer<DTO> {
     context: any,
     authorizerContext: AuthorizationContext
   ): Promise<Filter<unknown> | undefined>
+
+  /**
+   * Compute the authorization filter the `@Authorize` pipeline would apply for
+   * the given context and operation. Intended for consumers outside the
+   * resolver pipeline (custom resolvers, domain services) so they can reuse
+   * the same `Filter<DTO>` the generated CRUD resolvers use.
+   */
+  computeAuthorizationFilter(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    context: any,
+    authorizerContext: AuthorizationContext
+  ): Promise<Filter<DTO>>
 }

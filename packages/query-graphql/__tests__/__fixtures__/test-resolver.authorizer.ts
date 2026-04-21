@@ -13,4 +13,8 @@ export class TestResolverAuthorizer implements Authorizer<TestResolverDTO> {
   authorizeRelation<Relation>(): Promise<Filter<Relation>> {
     return Promise.reject(new Error('authorizeRelation Not Implemented'))
   }
+
+  computeAuthorizationFilter(): Promise<Filter<TestResolverDTO>> {
+    return Promise.reject(new Error('computeAuthorizationFilter Not Implemented'))
+  }
 }

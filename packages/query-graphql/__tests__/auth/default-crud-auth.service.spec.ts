@@ -126,6 +126,21 @@ describe('createDefaultAuthorizer', () => {
     expect(filter).toEqual({ ownerId: { eq: 2 } })
   })
 
+  it('should expose computeAuthorizationFilter as a public alias of authorize', async () => {
+    const authorizer = testingModule.get<Authorizer<TestDTO>>(getAuthorizerToken(TestDTO))
+    const context = { user: { id: 7 } }
+    const authzCtx: AuthorizationContext = {
+      operationName: 'queryMany',
+      operationGroup: OperationGroup.READ,
+      readonly: true,
+      many: true
+    }
+    const viaAuthorize = await authorizer.authorize(context, authzCtx)
+    const viaCompute = await authorizer.computeAuthorizationFilter(context, authzCtx)
+    expect(viaCompute).toEqual(viaAuthorize)
+    expect(viaCompute).toEqual({ ownerId: { eq: 7 } })
+  })
+
   it('should create an auth filter that depends on the passed operation name', async () => {
     const authorizer = testingModule.get<Authorizer<TestDTO>>(getAuthorizerToken(TestDTO))
     const filter = await authorizer.authorize(
