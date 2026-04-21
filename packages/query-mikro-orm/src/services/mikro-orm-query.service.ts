@@ -1,15 +1,4 @@
-import {
-  Collection,
-  EntityData,
-  EntityKey,
-  EntityRepository,
-  FilterQuery,
-  QueryOrder,
-  QueryOrderMap,
-  Reference,
-  wrap
-} from '@mikro-orm/core'
-import { OperatorMap } from '@mikro-orm/core/typings'
+import { Collection, EntityKey, EntityRepository, FilterQuery, QueryOrder, QueryOrderMap, Reference, wrap } from '@mikro-orm/core'
 import {
   AggregateOptions,
   AggregateQuery,
@@ -23,7 +12,6 @@ import {
   DeleteManyResponse,
   DeleteOneOptions,
   Filter,
-  FilterComparisons,
   FindByIdOptions,
   FindRelationOptions,
   GetByIdOptions,
@@ -37,6 +25,8 @@ import {
   UpdateManyResponse,
   UpdateOneOptions
 } from '@ptc-org/nestjs-query-core'
+
+import { buildMikroOrmQuery } from '../query'
 
 export class MikroOrmQueryService<DTO extends object, Entity extends object = DTO> extends NoOpQueryService<DTO, Entity> {
   constructor(
@@ -352,84 +342,7 @@ export class MikroOrmQueryService<DTO extends object, Entity extends object = DT
     }
 
     const convertedFilter = this.assembler?.convertQuery?.({ filter } as Query<DTO>)?.filter ?? filter
-
-    if ((convertedFilter?.and || convertedFilter?.or) && Object.keys(convertedFilter).length > 1) {
-      throw new Error('filter must contain either only `and` or `or` property, or other properties')
-    }
-
-    if (convertedFilter?.and) {
-      return {
-        $and: convertedFilter.and.map((f) => this.convertFilter(f as Filter<DTO> | Filter<Entity>))
-      } as FilterQuery<Entity>
-    }
-
-    if (convertedFilter?.or) {
-      return {
-        $or: convertedFilter.or.map((f) => this.convertFilter(f as Filter<DTO> | Filter<Entity>))
-      } as FilterQuery<Entity>
-    }
-
-    return this.expandFilter(convertedFilter)
-  }
-
-  protected expandFilter(comparisons: FilterComparisons<unknown>): FilterQuery<Entity> {
-    const filters = Object.entries(comparisons).map(([k, v]) => {
-      return this.expandFilterComparison(k, v)
-    })
-
-    return Object.fromEntries(filters) as FilterQuery<Entity>
-  }
-
-  protected expandFilterComparison(k: string, v: unknown): [string, unknown] {
-    if (k === 'eq' || k === 'is') {
-      return ['$eq', v as string] satisfies ['$eq', OperatorMap<string>['$eq']]
-    }
-
-    if (k === 'neq' || k === 'isNot') {
-      return ['$ne', v as string] satisfies ['$ne', OperatorMap<string>['$ne']]
-    }
-
-    if (k === 'gt') {
-      return ['$gt', v as string] satisfies ['$gt', OperatorMap<string>['$gt']]
-    }
-
-    if (k === 'gte') {
-      return ['$gte', v as string] satisfies ['$gte', OperatorMap<string>['$gte']]
-    }
-
-    if (k === 'lt') {
-      return ['$lt', v as string] satisfies ['$lt', OperatorMap<string>['$lt']]
-    }
-
-    if (k === 'lte') {
-      return ['$lte', v as string] satisfies ['$lte', OperatorMap<string>['$lte']]
-    }
-
-    if (k === 'in') {
-      return ['$in', v as string[]] satisfies ['$in', OperatorMap<string>['$in']]
-    }
-
-    if (k === 'notIn') {
-      return ['$nin', v as string[]] satisfies ['$nin', OperatorMap<string>['$nin']]
-    }
-
-    if (k === 'like') {
-      return ['$like', v as string] satisfies ['$like', OperatorMap<string>['$like']]
-    }
-
-    if (k === 'notLike') {
-      return ['$not', { $like: v as string }]
-    }
-
-    if (k === 'iLike') {
-      return ['$ilike', v as string] satisfies ['$ilike', OperatorMap<string>['$ilike']]
-    }
-
-    if (k === 'notILike') {
-      return ['$not', { $ilike: v as string }]
-    }
-
-    return [k, this.expandFilter(v as FilterComparisons<unknown>)]
+    return buildMikroOrmQuery<Entity>(convertedFilter as Filter<Entity>)
   }
 
   async findRelation<Relation extends object>(
