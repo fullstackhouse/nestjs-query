@@ -563,9 +563,9 @@ describe('MikroOrmQueryService', () => {
     })
 
     it('should throw for withDeleted option', async () => {
-      await expect(
-        queryService.aggregate({}, { count: [{ field: 'id', args: {} }] }, { withDeleted: true })
-      ).rejects.toThrow('MikroOrmQueryService does not support withDeleted on aggregate')
+      await expect(queryService.aggregate({}, { count: [{ field: 'id', args: {} }] }, { withDeleted: true })).rejects.toThrow(
+        'MikroOrmQueryService does not support withDeleted on aggregate'
+      )
     })
   })
 })
