@@ -1,4 +1,5 @@
 export { MikroOrmAssembler } from './assemblers'
 export { NestjsQueryMikroOrmModule } from './module'
 export { createMikroOrmQueryServiceProviders, EntityServiceOptions } from './providers'
+export { buildMikroOrmQuery } from './query'
 export { MikroOrmQueryService } from './services'
