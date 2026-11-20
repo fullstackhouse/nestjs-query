@@ -7,6 +7,9 @@ on:
       - releases/*
   pull_request:
 
+permissions:
+  contents: read
+
 env:
   NX_BRANCH: ${{ github.event.number }}
   NX_RUN_GROUP: ${{ github.run_id }}
@@ -15,10 +18,14 @@ jobs:
 
   setup:
     uses: ./.github/workflows/shared.setup-env.yml
+    permissions:
+      contents: read
 
   check:
     needs: setup
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     strategy:
       fail-fast: false
       matrix:
@@ -62,6 +69,8 @@ jobs:
   e2e-test:
     needs: setup
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     strategy:
       fail-fast: false
       matrix:
@@ -98,6 +107,8 @@ jobs:
 
   federation-e2e-test:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
         with:
